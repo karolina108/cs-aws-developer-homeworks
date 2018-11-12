@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'Simple private S3 bucket'
+
+Parameters:
+  BucketNumber:
+    Type: String
+    Default: '003'
+    AllowedPattern: '(\d{3})'
+  AccessControl:
+    Type: String
+    Default: Private
+    AllowedValues:
+     - Private
+     - PublicRead
+     - AwsExecRead
+     - BucketOwnerFullControl
+     - LogDeliveryDrive
+
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-bucket-${BucketNumber}'
+      AccessControl: !Sub '${AccessControl}'
+
+  S3ListAndReadRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${AWS::Region}-role-${BucketNumber}'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  IAMPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: 'Policy for reading objects and listing objects in a created bucket'
+      ManagedPolicyName: !Sub '${AWS::StackName}-bucket-${BucketNumber}-policy'
+      Path: "/"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action: "s3:GetObject"
+            Resource: !Sub 'arn:aws:s3:::${AWS::StackName}-bucket-${BucketNumber}/*'
+          -
+            Effect: "Allow"
+            Action: "s3:ListBucket"
+            Resource: !Sub 'arn:aws:s3:::${AWS::StackName}-bucket-${BucketNumber}'
+      Roles:
+        -
+          Ref: "S3ListAndReadRole"
+
+Outputs:
+  BucketName:
+    Value: !Ref 'S3Bucket'
+  ARN:
+    Value: !GetAtt S3Bucket.Arn
+  IAMRole:
+    Value: !Ref 'S3ListAndReadRole'
