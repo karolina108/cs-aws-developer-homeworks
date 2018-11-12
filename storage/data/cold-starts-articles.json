@@ -1,0 +1,48 @@
+ [
+    {
+      "id": "00001",
+      "title": "How does language, memory and package size affect cold starts of AWS Lambda?",
+      "description": "Comparing the cold start times of AWS Lambda using different languages, memory allocation, and sizes of deployment package",
+      "link": "https://read.acloud.guru/does-coding-language-memory-or-package-size-affect-cold-starts-of-aws-lambda-a15e26d12c76",
+      "tags": ["aws", "function", "cold starts"],
+      "rating": "5",
+      "publicationDate": "2017-06-14"
+    },
+    {
+      "id": "00002",
+      "title": "Keeping Functions Warm - How To Fix AWS Lambda Cold Start Issues",
+      "description": "A remedy for cold starts of AWS Lambda - WarmUP plugin",
+      "link": "https://serverless.com/blog/keep-your-lambdas-warm/",
+      "tags": ["aws", "function", "cold starts"],
+      "rating": "2",
+      "publicationDate": "1900-01-01"
+    },
+    {
+      "id": "00003",
+      "title": "Serverless: Cold Start War",
+      "description": "Comparison of cold starts for functions in AWS, Azure and GCP, for different programming languages",
+      "link": "https://medium.com/@MikhailShilkov/serverless-cold-start-war-3978187677ce",
+      "tags": ["aws", "azure", "gcp", "function", "cold starts"],
+      "rating": "5",
+      "publicationDate": "2018-11-12"
+    },
+    {
+      "id": "00004",
+      "title": "Cold Starts Beyond First Request in Azure Functions",
+      "description": "Azure Function cold starts in scale-out scenarios",
+      "link": "https://mikhail.io/2018/05/azure-functions-cold-starts-beyond-first-load/",
+      "tags": ["azure", "function", "cold starts"],
+      "rating": "5",
+      "publicationDate": "2018-05-18"
+    },
+    {
+      "id": "00005",
+      "title": "Azure Functions: Cold Starts in Numbers",
+      "description": "Azure Function cold starts for different languages. Comparison of function runtimes V1 vs V2",
+      "link": "https://mikhail.io/2018/04/azure-functions-cold-starts-in-numbers/",
+      "tags": ["azure", "function", "cold starts"],
+      "rating": "5",
+      "publicationDate": "2018-04-24"
+    }
+  ]
+
