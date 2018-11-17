@@ -1,7 +1,42 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: 'Flow logs configuration for a VPC'
+
+Parameters:
+  Project:
+    Type: String
+    Description: 'Project symbol'
+    Default: 'cs'
+
+  Environment:
+    Type: String
+    Description: 'Environment'
+    AllowedValues:
+      - 'dev'
+      - 'test'
+      - 'prod'
+    Default: 'dev'
+
+  VpcId:
+    Type: String
+    Default: ''
+
+Conditions:
+  ImportVpcId: !Equals [!Ref VpcId, '']
+
 Resources:
-  DummyServer:
-    Type: "AWS::EC2::Instance"
+  FlowLog:
+    Type: "AWS::EC2::FlowLog"
     Properties:
-      ImageId: ""
+      DeliverLogsPermissionArn: !ImportValue 'CloudWatchFlowLogsRoleArn'
+      LogDestinationType: cloud-watch-logs
+      LogGroupName: !Sub '${Project}-${Environment}-flow-log-group'
+      ResourceType: VPC
+      ResourceId: !If
+        - ImportVpcId
+        - Fn::ImportValue: !Sub '${Project}-${Environment}-VPC'
+        - !Ref 'VpcId'
+      TrafficType: ALL
+
+
+
+
