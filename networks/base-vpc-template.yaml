@@ -1,0 +1,560 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'Base VPC in two AZ with public and private subnets'
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'VPC Parameters'
+      Parameters:
+      - Cidr2ndOctet
+      - Cidr3rdOctetBastionHostSubnet1
+      - Cidr3rdOctetBastionHostSubnet2
+      - Cidr3rdOctetNatSubnet1
+      - Cidr3rdOctetNatSubnet2
+      - Cidr3rdOctetBackendSubnet1
+      - Cidr3rdOctetBackendSubnet2
+      - Cidr3rdOctetDbSubnet1
+      - Cidr3rdOctetDbSubnet2
+      - SshAllowedAccessCidr
+
+Parameters:
+  Project:
+    Type: String
+    Description: 'Project symbol'
+    Default: 'cs'
+
+  Environment:
+    Type: String
+    Description: 'Environment'
+    AllowedValues:
+      - 'dev'
+      - 'test'
+      - 'prod'
+    Default: 'dev'
+
+  Cidr2ndOctet:
+    Description: '2nd Octet of the CIDR block for a VPC'
+    Type: Number
+    Default: 0
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetBastionHostSubnet1:
+    Description: '3rd Octet of a CIDR block for a bastion host subnet'
+    Type: Number
+    Default: 10
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetBastionHostSubnet2:
+    Description: '3rd Octet of a CIDR block for a bastion host subnet'
+    Type: Number
+    Default: 20
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetNatSubnet1:
+    Description: '3rd Octet of a CIDR block a NAT subnet'
+    Type: Number
+    Default: 11
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetNatSubnet2:
+    Description: '3rd Octet of a CIDR block a NAT subnet'
+    Type: Number
+    Default: 21
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetBackendSubnet1:
+    Description: '3rd Octet of a CIDR block a backend apps subnet'
+    Type: Number
+    Default: 12
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetBackendSubnet2:
+    Description: '3rd Octet of a CIDR block a backend apps subnet'
+    Type: Number
+    Default: 22
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetDbSubnet1:
+    Description: '3rd Octet of a CIDR block a databases subnet'
+    Type: Number
+    Default: 13
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  Cidr3rdOctetDbSubnet2:
+    Description: '3rd Octet of a CIDR block a databases subnet'
+    Type: Number
+    Default: 23
+    ConstraintDescription: 'Range: 0-255'
+    MinValue: 0
+    MaxValue: 255
+
+  SshAllowedAccessCidr:
+    Description: 'CIDR range for SSH access to resources in bastion host subnets'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: 'must be a valid IP CIDR range of the form x.x.x.x/x.'
+
+
+Resources:
+
+  # VPC
+
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-VPC'
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-IG'
+
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # SUBNETS
+
+  BastionHostSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetBastionHostSubnet1}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BASTION-SBN-1'
+
+  BastionHostSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetBastionHostSubnet2}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BASTION-SBN-2'
+
+  NatSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetNatSubnet1}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-SBN-1'
+
+  NatSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetNatSubnet2}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-SBN-2'
+
+  BackendSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetBackendSubnet1}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BACKEND-SBN-1'
+
+  BackendSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetBackendSubnet2}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BACKEND-SBN-2'
+
+  DbSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetDbSubnet1}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-DB-SBN-1'
+
+  DbSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Sub '10.${Cidr2ndOctet}.${Cidr3rdOctetDbSubnet2}.0/24'
+      VpcId: !Ref 'VPC'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-DB-SBN-2'
+
+  # NAT
+
+  EipForNat1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+
+  EipForNat2:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    DependsOn: 'VPCGatewayAttachment'
+    Properties:
+      AllocationId: !GetAtt ['EipForNat1', 'AllocationId']
+      SubnetId: !Ref 'NatSubnet1'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-1'
+
+  NatGateway2:
+    Type: 'AWS::EC2::NatGateway'
+    DependsOn: 'VPCGatewayAttachment'
+    Properties:
+      AllocationId: !GetAtt ['EipForNat2', 'AllocationId']
+      SubnetId: !Ref 'NatSubnet2'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-2'
+
+  # ROUTES
+
+  BastionHostRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BASTION-RT-1'
+
+  BastionHostRouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'BastionHostRouteTable1'
+      SubnetId: !Ref 'BastionHostSubnet1'
+
+  BastionHostIgRoute1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'BastionHostRouteTable1'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  BastionHostRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BASTION-RT-2'
+
+  BastionHostRouteTableAssociation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'BastionHostRouteTable2'
+      SubnetId: !Ref 'BastionHostSubnet2'
+
+  BastionHostIgRoute2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'BastionHostRouteTable2'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+          
+  NatRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-RT-1'
+
+  NatRouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'NatRouteTable1'
+      SubnetId: !Ref 'NatSubnet1'
+
+  NatIgRoute1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'NatRouteTable1'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  NatRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-NAT-RT-2'
+
+  NatRouteTableAssociation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'NatRouteTable2'
+      SubnetId: !Ref 'NatSubnet2'
+
+  NatIgRoute2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'NatRouteTable2'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+      
+  BackendRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BACKEND-RT-1'
+
+  BackendRouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'BackendRouteTable1'
+      SubnetId: !Ref 'BackendSubnet1'
+
+  BackendNatRoute1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'BackendRouteTable1'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway1
+
+  BackendRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BACKEND-RT-2'
+
+  BackendRouteTableAssociation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'BackendRouteTable2'
+      SubnetId: !Ref 'BackendSubnet2'
+
+  BackendNatRoute2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'BackendRouteTable2'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway2
+      
+  DbRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-DB-RT-1'
+
+  DbRouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'DbRouteTable1'
+      SubnetId: !Ref 'DbSubnet1'
+
+  DbNatRoute1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'DbRouteTable1'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway1
+
+  DbRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-DB-RT-2'
+
+  DbRouteTableAssociation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref 'DbRouteTable2'
+      SubnetId: !Ref 'DbSubnet2'
+
+  DbNatRoute2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref 'DbRouteTable2'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway2
+
+  BastionHostSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for a bastion host'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SshAllowedAccessCidr
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BASTION-SG'
+
+  BackendSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for backend applications'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-BACKEND-SG'
+
+  DbSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for databases'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref BackendSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project}-${Environment}-DB-SG'
+
+Outputs:
+
+  StackName:
+    Description: 'Stack name'
+    Value: !Sub '${AWS::StackName}'
+    
+  VPC:
+    Description: 'VPC ID'
+    Value: !Ref 'VPC'
+    Export:
+      Name: !Sub '${Project}-${Environment}-VPC'
+      
+  BastionHostSubnet1:
+    Description: 'Bastion Host subnet 1'
+    Value: !Ref 'BastionHostSubnet1'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BASTION-SBN-1'
+      
+  BastionHostSubnet2:
+    Description: 'Bastion Host subnet 2'
+    Value: !Ref 'BastionHostSubnet2'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BASTION-SBN-2'
+
+  NatSubnet1:
+    Description: 'NAT subnet 1'
+    Value: !Ref 'NatSubnet1'
+    Export:
+      Name: !Sub '${Project}-${Environment}-NAT-SBN-1'
+      
+  NatSubnet2:
+    Description: 'NAT subnet 2'
+    Value: !Ref 'NatSubnet2'
+    Export:
+      Name: !Sub '${Project}-${Environment}-NAT-SBN-2'
+      
+  BackendSubnet1:
+    Description: 'Backend subnet 1'
+    Value: !Ref 'BackendSubnet1'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BACKEND-SBN-1'
+      
+  BackendSubnet2:
+    Description: 'Backend subnet 2'
+    Value: !Ref 'BackendSubnet2'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BACKEND-SBN-2'
+      
+  DbSubnet1:
+    Description: 'Db subnet 1'
+    Value: !Ref 'DbSubnet1'
+    Export:
+      Name: !Sub '${Project}-${Environment}-DB-SBN-1'
+      
+  DbSubnet2:
+    Description: 'Db subnet 2'
+    Value: !Ref 'DbSubnet2'
+    Export:
+      Name: !Sub '${Project}-${Environment}-DB-SBN-2'
+
+  BastionHostSecurityGroup:
+    Description: 'Bastion host security group'
+    Value: !Ref 'BastionHostSecurityGroup'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BASTION-SG'
+      
+  BackendSecurityGroup:
+    Description: 'Backend applications security group'
+    Value: !Ref 'BackendSecurityGroup'
+    Export:
+      Name: !Sub '${Project}-${Environment}-BACKEND-SG'
+
+  DbSecurityGroup:
+    Description: 'Database security group'
+    Value: !Ref 'DbSecurityGroup'
+    Export:
+      Name: !Sub '${Project}-${Environment}-DB-SG'

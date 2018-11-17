@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "Project",
+    "ParameterValue": "cs-aws-dev"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  }
+]
