@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'IAM role for creating Flow Logs in Cloud Watch'
+Resources:
+  CloudWatchFlowLogsRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: 'CloudWatchFlowLogsRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+
+  CloudWatchFlowLogsPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Policy for publishing flow logs in Cloud Watch logs'
+      ManagedPolicyName: 'CloudWatchFlowLogsPolicy'
+      Path: '/'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: 'Allow'
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+            Resource: '*'
+      Roles:
+        -
+          Ref: 'CloudWatchFlowLogsRole'
+Outputs:
+  CloudWatchFlowLogsRoleArn:
+    Value: !GetAtt CloudWatchFlowLogsRole.Arn
+
