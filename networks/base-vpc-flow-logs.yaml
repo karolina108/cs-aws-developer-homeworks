@@ -29,13 +29,20 @@ Resources:
     Properties:
       DeliverLogsPermissionArn: !ImportValue 'CloudWatchFlowLogsRoleArn'
       LogDestinationType: cloud-watch-logs
-      LogGroupName: !Sub '${Project}-${Environment}-flow-log-group'
+      LogGroupName: !Ref 'LogGroup'
       ResourceType: VPC
       ResourceId: !If
         - ImportVpcId
         - Fn::ImportValue: !Sub '${Project}-${Environment}-VPC'
         - !Ref 'VpcId'
       TrafficType: ALL
+
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '${Project}-${Environment}-flow-log'
+      RetentionInDays: 30
+
 
 
 
