@@ -41,4 +41,6 @@ Resources:
 Outputs:
   CloudWatchFlowLogsRoleArn:
     Value: !GetAtt CloudWatchFlowLogsRole.Arn
+    Export:
+      Name: 'CloudWatchFlowLogsRoleArn'
 
