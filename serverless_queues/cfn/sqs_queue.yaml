@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'SQS queue for guests'
+
+Resources:
+  GuestsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: 'GuestsQueue'
+      VisibilityTimeout: 5
+      ReceiveMessageWaitTimeSeconds: 20
+
+Outputs:
+  GuestsQueueURL:
+    Description: 'SQS queue for guests'
+    Value: !Ref GuestsQueue
+    Export:
+      Name: 'GuestsQueue-URL'
+
+  GuestsQueueName:
+    Description: 'SQS queue for guests'
+    Value: !GetAtt GuestsQueue.QueueName
+    Export:
+      Name: 'GuestsQueue-NAME'

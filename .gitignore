@@ -4,3 +4,4 @@ out
 gen
 *.iml
 local-scripts
+/sanbox/

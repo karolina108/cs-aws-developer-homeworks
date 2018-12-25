@@ -1,5 +1,5 @@
 
-API_URL = "https://0q4sc9kqtk.execute-api.eu-west-1.amazonaws.com/prod/";
+API_URL = "https://0q4sc9kqtk.execute-api.eu-west-1.amazonaws.com/decoupled/";
 
 postRequest = function() {
 
