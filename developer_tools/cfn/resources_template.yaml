@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'Template for serverless application'
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: 'PublicRead'
+      BucketName: 'cs-aws-dev-tools-website'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+      PublicAccessBlockConfiguration:
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: "WebsiteBucket"
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - 's3:GetObject'
+            Effect: 'Allow'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - "WebsiteBucket"
+                - '/*'
+            Principal: '*'
+
+  GuestsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: 'MyGuestsQueue'
+      VisibilityTimeout: 5
+      ReceiveMessageWaitTimeSeconds: 20
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: 'MyGuests'
+      AttributeDefinitions:
+        -
+          AttributeName: 'email'
+          AttributeType: 'S'
+        -
+          AttributeName: 'name'
+          AttributeType: 'S'
+      KeySchema:
+        -
+          AttributeName: 'email'
+          KeyType: 'HASH'
+
+        -
+          AttributeName: 'name'
+          KeyType: 'RANGE'
+
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  GuestsQueueURL:
+    Description: 'SQS queue for guests'
+    Value: !Ref GuestsQueue
+    Export:
+      Name: 'MyGuestsQueue-URL'
+
+  GuestsQueueName:
+    Description: 'SQS queue for guests'
+    Value: !GetAtt GuestsQueue.QueueName
+    Export:
+      Name: 'MyGuestsQueue-NAME'
+
+  GuestsTableName:
+    Description: 'DynamoDB Table for guests'
+    Value: !Ref DynamoDBTable
+    Export:
+      Name: 'MyGuestsTable-NAME'
+
+
+
+
+
+
+
