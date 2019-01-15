@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'S3 buckets'
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: 'PublicRead'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+      PublicAccessBlockConfiguration:
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: WebsiteBucket
+    Properties:
+      Bucket: !Ref 'WebsiteBucket'
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - 's3:GetObject'
+            Effect: 'Allow'
+            Resource: !Join
+              - ''
+              - - !Sub 'arn:aws:s3:::'
+                - !Ref WebsiteBucket
+                - '/*'
+            Principal: '*'
+
+  CodeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: 'Private'
+
+Outputs:
+  WebsiteBucketUrl:
+    Value: !Sub 'http://${WebsiteBucket}.s3-website.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: my-guests-bucket-url
+
+  CodeBucketName:
+    Value: !Ref CodeBucket
+    Export:
+      Name: my-code-bucket-name
+

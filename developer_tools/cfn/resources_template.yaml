@@ -1,33 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: 'Template for serverless application'
 Resources:
-  WebsiteBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: 'PublicRead'
-      BucketName: 'cs-aws-dev-tools-website'
-      WebsiteConfiguration:
-        IndexDocument: 'index.html'
-      PublicAccessBlockConfiguration:
-        BlockPublicPolicy: false
-        RestrictPublicBuckets: false
-
-  WebsiteBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: "WebsiteBucket"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - 's3:GetObject'
-            Effect: 'Allow'
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - "WebsiteBucket"
-                - '/*'
-            Principal: '*'
 
   GuestsQueue:
     Type: AWS::SQS::Queue
@@ -51,11 +24,9 @@ Resources:
         -
           AttributeName: 'email'
           KeyType: 'HASH'
-
         -
           AttributeName: 'name'
           KeyType: 'RANGE'
-
       BillingMode: PAY_PER_REQUEST
 
 Outputs:
