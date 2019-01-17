@@ -6,7 +6,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: 'MyGuestsQueue'
-      VisibilityTimeout: 5
+      VisibilityTimeout: 20
       ReceiveMessageWaitTimeSeconds: 20
 
   DynamoDBTable:
@@ -41,6 +41,12 @@ Outputs:
     Value: !GetAtt GuestsQueue.QueueName
     Export:
       Name: 'MyGuestsQueue-NAME'
+
+  GuestsQueueArn:
+    Description: 'SQS queue for guests'
+    Value: !GetAtt GuestsQueue.Arn
+    Export:
+      Name: 'MyGuestsQueue-ARN'
 
   GuestsTableName:
     Description: 'DynamoDB Table for guests'

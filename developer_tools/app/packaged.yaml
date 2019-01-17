@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Invite Guests App
+
+  '
+Globals:
+  Function:
+    Timeout: 20
+Outputs:
+  GuestsApi:
+    Description: API Gateway endpoint URL for Prod stage for Register Guest function
+    Value:
+      Fn::Sub: https://${GuestsApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/register/
+  RegisterGuestFunction:
+    Description: Register Guest Lambda Function ARN
+    Value:
+      Ref: RegisterGuestFunction
+  RegisterGuestFunctionIamRole:
+    Description: Implicit IAM Role created for Register Guest function
+    Value:
+      Fn::GetAtt:
+      - RegisterGuestFunctionRole
+      - Arn
+  SaveGuestFunction:
+    Description: SaveGuest Lambda Function ARN
+    Value:
+      Ref: SaveGuestFunction
+  SaveGuestFunctionIamRole:
+    Description: Implicit IAM Role created for Save Guest function
+    Value:
+      Fn::GetAtt:
+      - SaveGuestFunctionRole
+      - Arn
+Resources:
+  GuestsApi:
+    Properties:
+      DefinitionBody:
+        info:
+          title:
+            Ref: AWS::StackName
+        paths:
+          /register:
+            post:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Success
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                passthroughBehavior: when_no_templates
+                requestTemplates:
+                  application/json: "{\n  \"name\": $input.json('$.person.name'),\n\
+                    \  \"email\": $input.json('$.person.email')\n}\n"
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: aws
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterGuestFunction.Arn}/invocations
+        swagger: 2.0
+      StageName: Prod
+    Type: AWS::Serverless::Api
+  RegisterGuestFunction:
+    Properties:
+      CodeUri: s3://cs-aws-dev-tools-buckets-codebucket-6awnspcawo7m/80b6d34aaaac161c214e5d86a79efd3d
+      Environment:
+        Variables:
+          QUEUE_NAME:
+            Fn::ImportValue: MyGuestsQueue-NAME
+      Events:
+        RegisterGuest:
+          Properties:
+            Method: post
+            Path: /register
+            RestApiId:
+              Ref: GuestsApi
+          Type: Api
+      Handler: register_guest.lambda_handler
+      Policies:
+      - Statement:
+        - Action:
+          - sqs:GetQueueUrl
+          - sqs:SendMessageBatch
+          - sqs:SendMessage
+          - sqs:GetQueueAttributes
+          Effect: Allow
+          Resource:
+            Fn::ImportValue: MyGuestsQueue-ARN
+        Version: '2012-10-17'
+      - CloudWatchPutMetricPolicy: {}
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+  SaveGuestFunction:
+    Properties:
+      CodeUri: s3://cs-aws-dev-tools-buckets-codebucket-6awnspcawo7m/80b6d34aaaac161c214e5d86a79efd3d
+      Environment:
+        Variables:
+          DYNAMODB_TABLE:
+            Fn::ImportValue: MyGuestsTable-NAME
+      Events:
+        SaveGuest:
+          Properties:
+            BatchSize: 10
+            Queue:
+              Fn::ImportValue: MyGuestsQueue-ARN
+          Type: SQS
+      Handler: save_guest.lambda_handler
+      Policies:
+      - Statement:
+        - Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+          Effect: Allow
+          Resource:
+            Fn::Join:
+            - ''
+            - - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/
+              - Fn::ImportValue: MyGuestsTable-NAME
+        Version: '2012-10-17'
+      - Statement:
+        - Action:
+          - sqs:GetQueueUrl
+          - sqs:ReceiveMessage
+          - sqs:DeleteMessage
+          - sqs:GetQueueAttributes
+          Effect: Allow
+          Resource:
+            Fn::ImportValue: MyGuestsQueue-ARN
+        Version: '2012-10-17'
+      - CloudWatchPutMetricPolicy: {}
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

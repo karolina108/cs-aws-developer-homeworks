@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Invite Guests App
+
+Globals:
+  Function:
+    Timeout: 20
+
+Resources:
+
+  RegisterGuestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: invite_guests/
+      Handler: register_guest.lambda_handler
+      Runtime: python3.6
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Action:
+                - sqs:GetQueueUrl
+                - sqs:SendMessageBatch
+                - sqs:SendMessage
+                - sqs:GetQueueAttributes
+              Resource: !ImportValue MyGuestsQueue-ARN
+        - CloudWatchPutMetricPolicy: {}
+      Environment:
+        Variables:
+          QUEUE_NAME: !ImportValue MyGuestsQueue-NAME
+      Events:
+        RegisterGuest:
+          Type: Api
+          Properties:
+            Path: /register
+            Method: post
+            RestApiId: !Ref GuestsApi
+
+  SaveGuestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: invite_guests/
+      Handler: save_guest.lambda_handler
+      Runtime: python3.6
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:GetItem
+              Resource: !Join
+                - ''
+                - - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/'
+                  - Fn::ImportValue: MyGuestsTable-NAME
+
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Action:
+                - sqs:GetQueueUrl
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !ImportValue MyGuestsQueue-ARN
+        - CloudWatchPutMetricPolicy: {}
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !ImportValue MyGuestsTable-NAME
+      Events:
+        SaveGuest:
+          Type: SQS
+          Properties:
+            Queue: !ImportValue MyGuestsQueue-ARN
+            BatchSize: 10
+
+  GuestsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      DefinitionBody:
+        swagger: 2.0
+        info:
+          title:
+            Ref: AWS::StackName
+        paths:
+          /register:
+            post:
+              consumes:
+               - 'application/json'
+              produces:
+               - 'application/json'
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterGuestFunction.Arn}/invocations'
+                requestTemplates:
+                  application/json: |
+                    {
+                      "name": $input.json('$.person.name'),
+                      "email": $input.json('$.person.email')
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin : "'*'"
+
+                passthroughBehavior: "when_no_templates"
+              responses:
+                "200":
+                  description: 'Success'
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+      StageName: 'Prod'
+
+
+Outputs:
+
+  GuestsApi:
+    Description: "API Gateway endpoint URL for Prod stage for Register Guest function"
+    Value: !Sub "https://${GuestsApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/register/"
+
+  RegisterGuestFunction:
+    Description: "Register Guest Lambda Function ARN"
+    Value: !Ref "RegisterGuestFunction"
+
+  RegisterGuestFunctionIamRole:
+    Description: "Implicit IAM Role created for Register Guest function"
+    Value: !GetAtt RegisterGuestFunctionRole.Arn
+
+  SaveGuestFunction:
+    Description: "SaveGuest Lambda Function ARN"
+    Value: !Ref "SaveGuestFunction"
+
+  SaveGuestFunctionIamRole:
+    Description: "Implicit IAM Role created for Save Guest function"
+    Value: !GetAtt SaveGuestFunctionRole.Arn

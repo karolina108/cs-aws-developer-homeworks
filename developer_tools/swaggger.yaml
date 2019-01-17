@@ -1,0 +1,17 @@
+swagger: 2.0
+info:
+  title:
+    Ref: AWS::StackName
+paths:
+  /register:
+    post:
+      consumes: 'application/json'
+      produces: 'text/plain'
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        type: aws_proxy
+        uri: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterGuestFunction.Arn}/invocations'
+        requestTemplates:
+          application/json: {"name": $input.json('$.person.name'), "email": $input.json('$.person.email')}
+
+      responses: {}

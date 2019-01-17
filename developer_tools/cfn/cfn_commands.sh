@@ -19,4 +19,9 @@ aws cloudformation create-stack \
     --template-body file://developer_tools/cfn/resources_template.yaml \
     --profile ${AWS_PROFILE}
 
+aws cloudformation update-stack \
+    --stack-name cs-aws-dev-tools-resources \
+    --template-body file://developer_tools/cfn/resources_template.yaml \
+    --profile ${AWS_PROFILE}
+
 
