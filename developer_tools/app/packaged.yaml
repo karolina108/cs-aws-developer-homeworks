@@ -39,6 +39,42 @@ Resources:
             Ref: AWS::StackName
         paths:
           /register:
+            options:
+              consumes:
+              - application/json
+              description: 'Enable CORS by returning correct headers
+
+                '
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Default response for CORS method
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+              summary: CORS support
+              tags:
+              - CORS
+              x-amazon-apigateway-integration:
+                requestTemplates:
+                  application/json: "{\n  \"statusCode\" : 200\n}\n"
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    responseTemplates:
+                      application/json: '{}
+
+                        '
+                    statusCode: '200'
+                type: mock
             post:
               consumes:
               - application/json
@@ -46,8 +82,12 @@ Resources:
               - application/json
               responses:
                 '200':
-                  description: Success
+                  description: Default response for CORS method
                   headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
                     Access-Control-Allow-Origin:
                       type: string
               x-amazon-apigateway-integration:
@@ -59,6 +99,8 @@ Resources:
                 responses:
                   default:
                     responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
                       method.response.header.Access-Control-Allow-Origin: '''*'''
                     statusCode: '200'
                 type: aws

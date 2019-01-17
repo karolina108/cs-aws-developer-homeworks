@@ -1,0 +1,46 @@
+body {
+  padding-top: 5rem;
+    background-color: black;
+    font-family: monospace;
+}
+
+h1 {
+    color: lightgrey;
+    font-family: monospace;
+}
+
+.form-control {
+    background-color: black;
+    color: #fff9f0;
+}
+
+.card-body {
+    background-color: black;
+}
+
+#response {
+    padding-left: 20%;
+    padding-right: 20%;
+    color: lightgrey;
+    font-size: larger;
+
+}
+
+.starter-template {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #fff9f0;
+}
+
+.container {
+    color: lightgrey;
+}
+
+.champaigne {
+    margin-bottom: 1em;
+}
+
+.btn.outline {
+    background: none;
+    padding: 12px 22px;
+}
