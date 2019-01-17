@@ -30,12 +30,6 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
 Outputs:
-  GuestsQueueURL:
-    Description: 'SQS queue for guests'
-    Value: !Ref GuestsQueue
-    Export:
-      Name: 'MyGuestsQueue-URL'
-
   GuestsQueueName:
     Description: 'SQS queue for guests'
     Value: !GetAtt GuestsQueue.QueueName
